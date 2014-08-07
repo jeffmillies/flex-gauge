@@ -5,10 +5,8 @@
  *  Author URI:
  */
 (function ($) {
-    var origThis;
     var FlexGauge = function (o) {
         if (typeof o === 'object') {
-            origThis = this;
             this._extendOptions(o, false);
             this._build();
         }
@@ -155,19 +153,35 @@
         update: function (o) {
             if (typeof o === 'object') {
                 var difference;
+
+                // if using int, convert to percent to check difference
+                if (typeof o.arcFillInt !== 'undefined' && o.arcFillInt == this.arcFillInt &&
+                    typeof o.arcFillTotal !== 'undefined' && o.arcFillTotal == this.arcFillTotal) {
+                    o.arcFillPercent = this.arcFillPercent;
+                } else if (typeof o.arcFillInt !== 'undefined' && typeof o.arcFillTotal !== 'undefined' &&
+                    (o.arcFillInt != this.arcFillInt || o.arcFillTotal == this.arcFillTotal)) {
+                    o.arcFillPercent = (o.arcFillInt / o.arcFillTotal);
+                } else if (typeof o.arcFillInt !== 'undefined' && typeof o.arcFillTotal === 'undefined' &&
+                    (o.arcFillInt != this.arcFillInt)) {
+                    o.arcFillPercent = (o.arcFillInt / this.arcFillTotal);
+                }
+
                 if (typeof o.arcFillPercent !== 'undefined') {
                     difference = Math.abs((this.arcFillPercent - o.arcFillPercent));
                 } else {
                     difference = this.arcFillPercent;
                 }
+
                 this._extendOptions(o, true);
 
                 clearInterval(this._animateLoop);
-                var that = this;
-                this._animateLoop = setInterval(function () {
-                    return that._animate();
-                }, (this.animateSpeed * this.animateNumerator) / (difference * this.animateDivisor));
 
+                if (difference > 0) {
+                    var that = this;
+                    this._animateLoop = setInterval(function () {
+                        return that._animate();
+                    }, (this.animateSpeed * this.animateNumerator) / (difference * this.animateDivisor));
+                }
             }
         },
 
@@ -311,6 +325,7 @@
                             dialVal = Math.round(this.arcFillInt * (this._animatePerc / this.arcFillPercent));
                             break;
                     }
+                    dialVal = (isNaN(dialVal) ? 0 : dialVal);
                     switch (this.dialUnitPosition) {
                         case 'before':
                             dialVal = this.dialUnit + dialVal;
@@ -395,4 +410,3 @@
         window.FlexGauge = FlexGauge;
     }
 })(jQuery);
-
